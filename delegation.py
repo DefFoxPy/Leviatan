@@ -6,7 +6,7 @@ Este módulo implementa un sistema de democracia líquida donde:
 - Cada votante tiene 1000 puntos base (1 voto completo)
 - Los puntos pueden ser delegados parcialmente
 - Las delegaciones pueden ser subdelegables o no
-- Se mantiene 1 punto reservado siempre
+- Se mantiene 2 puntos reservado siempre
 - Se detectan y resuelven ciclos de delegación
 
 Características principales:
@@ -56,8 +56,8 @@ class Voter:
         self.delegations: Dict[str, Dict] = {}  # {delegate_id: {'points': int, 'subdelegable': bool}}
         self.received_points: Dict[str, Dict] = {}  # {from_voter: {'points': int, 'subdelegable': bool}}
         self.base_points = 1000
-        self.available_points = 1000
-        self.reserved_points = 1  # Siempre mantener 1 punto reservado
+        self.RESERVED_POINTS = 2  # Aumentado de 1 a 2 puntos reservados
+        self.available_points = self.base_points - self.RESERVED_POINTS
         
     def get_total_voting_power(self) -> Tuple[int, int]:
         subdelegable = sum(d['points'] for d in self.received_points.values() if d['subdelegable'])
@@ -66,7 +66,7 @@ class Voter:
 
     def get_delegatable_points(self) -> int:
         """Retorna el número de puntos que pueden ser delegados"""
-        return self.available_points - self.reserved_points
+        return self.available_points - self.RESERVED_POINTS
 
 class DelegationSystem:
     """
@@ -390,3 +390,61 @@ class DelegationSystem:
             self.get_all_descendants(delegate, visited)
         
         return visited
+
+    def get_total_delegated_points(self, user_id: str, visited=None) -> int:
+        """Recursively calculate total points under a user's control"""
+        if visited is None:
+            visited = set()
+        
+        if user_id in visited:
+            return 0  # Prevent cycles
+            
+        visited.add(user_id)
+        total = 0
+        
+        # Get direct delegations to this user
+        delegations = self.get_delegations_to(user_id)
+        for delegation in delegations:
+            total += delegation.points
+            # Add subdelegated points
+            total += self.get_total_delegated_points(delegation.from_id, visited)
+            
+        return total
+
+    def revoke_delegation(self, from_id: str, to_id: str) -> tuple[bool, int]:
+        """
+        Revokes delegation and returns all points from subdelegations
+        Returns: (success, total_points_recovered)
+        """
+        # Get points before breaking the delegation chain
+        points_to_recover = self.get_total_delegated_points(to_id)
+        
+        # Remove the direct delegation
+        if not self._remove_delegation(from_id, to_id):
+            return False, 0
+            
+        # Reset all subdelegations recursively
+        self._reset_subdelegations(to_id)
+        
+        # Return points to original delegator
+        self.voters[from_id].available_points += points_to_recover
+        
+        return True, points_to_recover
+        
+    def _reset_subdelegations(self, user_id: str, visited=None):
+        """Recursively reset all subdelegations"""
+        if visited is None:
+            visited = set()
+            
+        if user_id in visited:
+            return
+            
+        visited.add(user_id)
+        
+        # Get all subdelegations
+        delegations = self.get_delegations_from(user_id)
+        for delegation in delegations:
+            # Reset subdelegations first
+            self._reset_subdelegations(delegation.to_id, visited)
+            # Remove this delegation
+            self._remove_delegation(user_id, delegation.to_id)

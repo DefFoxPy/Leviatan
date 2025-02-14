@@ -20,25 +20,105 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Constitution:
+    """Gestiona la constitución y sus reglas"""
+    
     def __init__(self):
         self.data_file = "Data/constitution.json"
-        self.articles: Dict = {}
-        self.requirements_cache: Dict = {}
-        self.cache_duration = timedelta(days=7)
-        self.load_data()
-
-    def load_data(self) -> None:
-        """Carga la constitución y su caché de requisitos"""
+        self.articles = {}
+        self.load_constitution()
+        
+    def load_constitution(self):
+        """Carga la constitución desde el archivo"""
         try:
-            with open(self.data_file, 'r') as f:
+            with open(self.data_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                self.articles = data['articles']
-                self.requirements_cache = data.get('requirements_cache', {
-                    "last_calculated": datetime.now().isoformat(),
-                    "by_article": {}
-                })
-        except FileNotFoundError:
-            self.initialize_empty_constitution()
+                self.articles = data.get('articles', {})
+        except Exception as e:
+            logger.error(f"Error cargando constitución: {e}")
+            self.articles = {}
+            
+    def calculate_proposal_requirements(self, article_ids: List[str]) -> Dict:
+        """
+        Calcula requisitos para una propuesta basado en los artículos afectados
+        
+        Args:
+            article_ids: Lista de IDs de artículos (existentes y nuevos)
+            
+        Returns:
+            Dict con requisitos calculados
+        """
+        try:
+            existing_articles = [aid for aid in article_ids if aid in self.articles]
+            new_articles = [aid for aid in article_ids if aid not in self.articles]
+            
+            # Base de votantes requeridos
+            base_required = 100  # Requisito mínimo base
+            
+            # Multiplicador por artículos existentes
+            existing_multiplier = sum(
+                self.articles[aid].get('weight', 1) 
+                for aid in existing_articles
+            )
+            
+            # Multiplicador por artículos nuevos
+            new_multiplier = len(new_articles) * 0.5  # 50% del peso de uno existente
+            
+            total_required = int(base_required * (existing_multiplier + new_multiplier))
+            
+            # Artículo que gobierna esta propuesta (el de mayor peso)
+            governing_article = max(
+                existing_articles,
+                key=lambda aid: self.articles[aid].get('weight', 1),
+                default=None
+            )
+            
+            return {
+                'required_voters': total_required,
+                'min_participation': int(total_required * 0.75),  # 75% del requerido
+                'governing_article': governing_article,
+                'existing_articles': len(existing_articles),
+                'new_articles': len(new_articles)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculando requisitos: {e}")
+            return None
+            
+    def validate_article_id(self, article_id: str) -> bool:
+        """Valida si un ID de artículo existe"""
+        return article_id in self.articles
+
+    def validate_article_group(self, article_ids: Set[str]) -> bool:
+        """Valida si un grupo de artículos puede votarse junto"""
+        if not article_ids:
+            return False
+            
+        # Verificar que todos existen
+        if not all(self.validate_article_id(aid) for aid in article_ids):
+            return False
+            
+        # Verificar coherencia de requisitos
+        reqs = [self.get_article_requirements(aid) for aid in article_ids]
+        if not all(reqs):
+            return False
+            
+        # Verificar que los artículos están relacionados
+        return self._are_articles_related(article_ids)
+
+    def _are_articles_related(self, article_ids: Set[str]) -> bool:
+        """Verifica si los artículos están relacionadamente conectados"""
+        # Implementar lógica de relación entre artículos
+        # Por ahora retorna True para pruebas
+        return True
+
+    def get_group_requirements(self, article_ids: Set[str]) -> Optional[Dict]:
+        """Obtiene requisitos combinados para un grupo de artículos"""
+        if not self.validate_article_group(article_ids):
+            return None
+            
+        # Usar requisitos del artículo más exigente
+        reqs = [self.get_article_requirements(aid) for aid in article_ids]
+        return max(reqs, key=lambda r: r['required_voters'])
 
     def initialize_empty_constitution(self) -> None:
         """Inicializa una constitución con el Artículo 0 inmutable"""
@@ -97,36 +177,6 @@ class Constitution:
             cached = self.articles[article_id]['cached_requirements']
 
         return cached
-
-    def calculate_proposal_requirements(self, article_ids: List[str]) -> Dict:
-        """Calcula requisitos para una propuesta basado en sus artículos"""
-        if "0" in article_ids:
-            return {
-                "required_voters": float('-inf'),
-                "min_participation": 0,
-                "governing_article": "0",
-                "total_articles": len(article_ids),
-                "immutable": True
-            }
-
-        requirements = []
-        for article_id in article_ids:
-            req = self.get_article_requirements(article_id)
-            if req:
-                requirements.append({**req, "article_id": article_id})
-
-        if not requirements:
-            return None
-
-        # El artículo que requiere más votantes gobierna la propuesta
-        governing_req = max(requirements, key=lambda x: x['required_voters'])
-
-        return {
-            "required_voters": governing_req['required_voters'],
-            "min_participation": governing_req['min_participation'],
-            "governing_article": governing_req['article_id'],
-            "total_articles": len(article_ids)
-        }
 
     def _recalculate_requirements(self, article_id: str) -> None:
         """Recalcula requisitos para un artículo basado en su historia"""

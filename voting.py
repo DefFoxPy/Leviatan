@@ -117,33 +117,92 @@ class Proposal:
         self.constitution = Constitution()
         self.affected_articles: Dict[str, Dict] = {}  # Artículos afectados y sus cambios
         self.governing_article: str = None  # Artículo que determina los requisitos
+        self.existing_articles: Dict[str, Dict] = {}  # Modificaciones a artículos existentes
+        self.new_articles: Dict[str, Dict] = {}       # Nuevos artículos propuestos
+        self.required_existing_articles = 1  # Mínimo de artículos existentes a modificar
+        self.article_votes: Dict[str, Dict[str, int]] = {}  # {article_id: {voter_id: points}}
+        self.article_requirements: Dict[str, Dict] = {}      # {article_id: requirements}
+        self.article_groups: List[Set[str]] = []            # Grupos de artículos relacionados
         
-    def add_article_modification(self, article_id: str, changes: Dict) -> bool:
+    def add_article_modification(self, article_id: str, changes: Dict, is_new: bool = False) -> bool:
         """
-        Añade una modificación a un artículo
+        Añade o modifica un artículo en la propuesta
         
         Args:
             article_id: Identificador del artículo
-            changes: Diccionario con los cambios:
-                - new_text: Nuevo texto
-                - old_text: Texto anterior
-                - justification: Justificación del cambio
-                - author_id: ID del autor
-                
-        Returns:
-            bool: True si se añadió exitosamente
+            changes: Diccionario con los cambios
+            is_new: True si es un artículo nuevo, False si es modificación
         """
         if self.state != ProposalState.DEBATE:
             return False
-            
-        self.articles[article_id] = {
+
+        article_data = {
             "current_version": changes.get("new_text", ""),
-            "previous_version": changes.get("old_text", ""),
+            "previous_version": changes.get("old_text", "") if not is_new else None,
             "justification": changes.get("justification", ""),
             "last_modified": datetime.now().isoformat(),
-            "modified_by": changes.get("author_id")
+            "modified_by": changes.get("author_id"),
+            "is_new": is_new
         }
+
+        if is_new:
+            self.new_articles[article_id] = article_data
+        else:
+            self.existing_articles[article_id] = article_data
+
         return True
+
+    def add_article_group(self, articles: Set[str]) -> bool:
+        """Añade un grupo de artículos relacionados"""
+        if not all(art_id in self.get_all_articles() for art_id in articles):
+            return False
+        
+        self.article_groups.append(articles)
+        return True
+
+    def get_group_requirements(self, group: Set[str]) -> Dict:
+        """Obtiene requisitos para un grupo basado en el artículo más exigente"""
+        if not group:
+            return None
+            
+        reqs = [
+            self.article_requirements.get(art_id, {'required_voters': 0})
+            for art_id in group
+        ]
+        
+        return max(reqs, key=lambda r: r['required_voters'])
+
+    def validate_group_vote(self, group: Set[str], points: int) -> bool:
+        """Valida si un voto cumple los requisitos del grupo"""
+        req = self.get_group_requirements(group)
+        if not req:
+            return False
+            
+        return points >= req['required_voters']
+
+    def validate_requirements(self) -> bool:
+        """
+        Valida que la propuesta cumpla con los requisitos mínimos
+        """
+        # Debe tener al menos un artículo existente modificado
+        if len(self.existing_articles) < self.required_existing_articles:
+            return False
+            
+        # Si hay nuevos artículos, validar que tengan contenido
+        for article in self.new_articles.values():
+            if not article["current_version"].strip():
+                return False
+                
+        return True
+
+    def get_all_articles(self) -> Dict[str, Dict]:
+        """
+        Retorna todos los artículos (existentes y nuevos)
+        """
+        return {
+            **self.existing_articles,
+            **self.new_articles
+        }
         
     async def change_state(self, new_state: ProposalState) -> bool:
         """Cambia estado de forma thread-safe"""
@@ -236,41 +295,45 @@ class VotingSystem:
         self.data_file = "Data/proposals.json"
         self.constitution = Constitution()
         
-    async def create_proposal(self, owner_id: str, title: str, articles: Dict[str, Dict]) -> Tuple[str, bool]:
+    async def create_proposal(self, owner_id: str, title: str, existing_articles: Dict[str, Dict], new_articles: Dict[str, Dict] = None) -> Tuple[str, bool]:
         """
         Crea una nueva propuesta
         
         Args:
             owner_id: ID del creador
             title: Título de la propuesta
-            articles: Dict[str, Dict] con la información de cada artículo:
-                {
-                    "art_1": {
-                        "previous_version": "v1",
-                        "previous_voters": 100,
-                        "changes": "nuevo texto"
-                    }
-                }
+            existing_articles: Artículos existentes a modificar
+            new_articles: Nuevos artículos a crear (opcional)
         """
-        if not owner_id or not title or not articles:
-            raise ValueError("Owner_id, título y artículos son requeridos")
+        if not owner_id or not title or not existing_articles:
+            raise ValueError("Owner_id, título y al menos un artículo existente son requeridos")
             
         if not self._validate_owner(owner_id):
             return None, False
-            
+
         proposal_id = f"prop_{len(self.proposals) + 1}"
         self.proposal_locks[proposal_id] = asyncio.Lock()
         
         proposal = Proposal(owner_id, title)
         try:
-            # Usar IDs de artículos directamente
-            article_ids = list(articles.keys())
+            # Procesar artículos existentes
+            for art_id, changes in existing_articles.items():
+                proposal.add_article_modification(art_id, changes, is_new=False)
+                
+            # Procesar nuevos artículos si existen
+            if new_articles:
+                for art_id, changes in new_articles.items():
+                    proposal.add_article_modification(art_id, changes, is_new=True)
+            
+            # Validar requisitos mínimos
+            if not proposal.validate_requirements():
+                return None, False
+                
+            # Calcular requisitos basados en todos los artículos
+            article_ids = list(proposal.get_all_articles().keys())
             proposal.calculate_requirements(article_ids)
             
-            # Guardar información de artículos
-            proposal.articles = articles
             self.proposals[proposal_id] = proposal
-            
             await self._save_data()
             return proposal_id, True
             
@@ -311,22 +374,16 @@ class VotingSystem:
             self.check_abandoned_proposals()
         return success
         
-    async def commit_points(self, proposal_id: str, voter_id: str, points: int, support: bool) -> bool:
+    async def commit_points(self, proposal_id: str, voter_id: str, article_group: Set[str], points: int, support: bool) -> bool:
         """
-        Compromete puntos a favor/contra de una propuesta
+        Compromete puntos para un grupo de artículos
         
         Args:
             proposal_id: ID de la propuesta
             voter_id: ID del votante
-            points: Puntos a comprometer (1-1000)
-            support: True si es a favor, False si en contra
-            
-        Returns:
-            bool: True si se comprometieron los puntos
-            
-        Notas:
-        - Los puntos quedan bloqueados hasta el fin
-        - No se pueden revocar una vez comprometidos
+            article_group: Conjunto de IDs de artículos
+            points: Puntos a comprometer
+            support: True si es a favor
         """
         if proposal_id not in self.proposals:
             return False
@@ -334,22 +391,32 @@ class VotingSystem:
         async with self.proposal_locks[proposal_id]:
             proposal = self.proposals[proposal_id]
             
-            if not self._is_valid_voting_state(proposal.state):
-                return False
-                
-            if not self._validate_voter_points(voter_id, points):
+            if not proposal.validate_group_vote(article_group, points):
                 return False
                 
             try:
-                result = await self._commit_points_internal(proposal, voter_id, points, support)
-                if result:
-                    proposal.update_activity()
-                    await self._save_data()
-                return result
+                # Distribuir puntos entre artículos
+                points_per_article = points // len(article_group)
+                remainder = points % len(article_group)
+                
+                for i, article_id in enumerate(article_group):
+                    art_points = points_per_article + (1 if i < remainder else 0)
+                    
+                    if support:
+                        proposal.article_votes.setdefault(article_id, {})
+                        proposal.article_votes[article_id][voter_id] = art_points
+                    else:
+                        proposal.article_votes.setdefault(article_id, {})
+                        proposal.article_votes[article_id][voter_id] = -art_points
+                
+                proposal.update_activity()
+                await self._save_data()
+                return True
+                
             except Exception as e:
                 logger.error(f"Error en commit_points: {e}")
                 return False
-        
+
     def can_close_proposal(self, proposal_id: str) -> bool:
         """
         Verifica si una propuesta puede cerrarse
@@ -462,3 +529,22 @@ class VotingSystem:
         except Exception as e:
             logger.error(f"Error cargando datos: {e}")
             raise
+
+    def _calculate_article_results(self, proposal_id: str) -> Dict[str, Dict]:
+        """Calcula resultados por artículo"""
+        proposal = self.proposals[proposal_id]
+        results = {}
+        
+        for article_id, votes in proposal.article_votes.items():
+            support = sum(p for p in votes.values() if p > 0)
+            oppose = abs(sum(p for p in votes.values() if p < 0))
+            total = support + oppose
+            
+            results[article_id] = {
+                'support': support,
+                'oppose': oppose,
+                'total': total,
+                'passed': support > oppose and support >= proposal.article_requirements[article_id]['required_voters']
+            }
+            
+        return results

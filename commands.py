@@ -44,6 +44,32 @@ class DelegationCommands(commands.Cog):
             
         await ctx.send(embed=embed)
 
+    @commands.command(name='revocar')
+    async def revoke(ctx, target: discord.Member):
+        """Revoca la delegación a un usuario y recupera todos los puntos subdelegados"""
+        success, points = delegation_system.revoke_delegation(
+            str(ctx.author.id), 
+            str(target.id)
+        )
+        
+        if success:
+            embed = discord.Embed(
+                title="Delegación Revocada",
+                color=discord.Color.green()
+            )
+            embed.add_field(
+                name="Puntos Recuperados", 
+                value=f"Has recuperado {points} puntos en total (incluyendo subdelegaciones)"
+            )
+        else:
+            embed = discord.Embed(
+                title="Error",
+                description="No tienes una delegación activa con este usuario.",
+                color=discord.Color.red()
+            )
+        
+        await ctx.send(embed=embed)
+
 class ProposalCommands(commands.Cog):
     """Comandos para gestionar propuestas"""
     
@@ -297,9 +323,145 @@ class AdminCommands(commands.Cog):
             
         await status_msg.edit(embed=embed)
 
+class DebateCommands(commands.Cog):
+    """Comandos para la fase de debate"""
+    
+    def __init__(self, bot):
+        self.bot = bot
+        
+    @commands.command(name="modificar")
+    async def propose_modification(self, ctx, proposal_id: str, article_id: str):
+        """Propone una modificación a un artículo
+        Uso: !modificar ID_PROPUESTA ID_ARTICULO"""
+        embed = Embed(
+            title="📝 Nueva Modificación",
+            description="Responde con los cambios propuestos y su justificación.",
+            color=Color.blue()
+        )
+        await ctx.send(embed=embed)
+        
+        try:
+            msg = await self.bot.wait_for(
+                'message',
+                timeout=300.0,
+                check=lambda m: m.author == ctx.author
+            )
+            
+            changes = {
+                'new_text': msg.content,
+                'justification': 'Pendiente de justificación'
+            }
+            
+            mod_id = await voting_system.debate_system.propose_modification(
+                proposal_id,
+                article_id,
+                str(ctx.author.id),
+                changes
+            )
+            
+            if mod_id:
+                embed = Embed(
+                    title="✅ Modificación Propuesta",
+                    description=f"ID: {mod_id}\nUsa !votar_mod {proposal_id} {mod_id} para votar",
+                    color=Color.green()
+                )
+            else:
+                embed = Embed(
+                    title="❌ Error",
+                    description="No se pudo proponer la modificación",
+                    color=Color.red()
+                )
+                
+            await ctx.send(embed=embed)
+            
+        except TimeoutError:
+            await ctx.send("⌛ Tiempo agotado")
+            
+    @commands.command(name="votar_mod")
+    async def vote_modification(self, ctx, proposal_id: str, mod_id: str, points: int):
+        """Vota en una modificación propuesta
+        Uso: !votar_mod ID_PROPUESTA ID_MOD PUNTOS"""
+        success = await voting_system.debate_system.vote_modification(
+            proposal_id,
+            mod_id,
+            str(ctx.author.id),
+            points
+        )
+        
+        if success:
+            embed = Embed(
+                title="✅ Voto Registrado",
+                description=f"Has votado con {points} puntos",
+                color=Color.green()
+            )
+        else:
+            embed = Embed(
+                title="❌ Error",
+                description="No se pudo registrar el voto",
+                color=Color.red()
+            )
+            
+        await ctx.send(embed=embed)
+
+    @commands.command(name="delegar_debate")
+    async def delegate_debate_points(self, ctx, proposal_id: str, mod_id: str, 
+                                   to_user: str, points: int):
+        """Delega puntos durante el debate
+        Uso: !delegar_debate ID_PROPUESTA ID_MOD @usuario PUNTOS"""
+        
+        success = await voting_system.debate_system.delegate_debate_points(
+            proposal_id,
+            mod_id,
+            str(ctx.author.id),
+            to_user.strip('<@!>'),
+            points
+        )
+        
+        if success:
+            embed = Embed(
+                title="✅ Delegación en Debate",
+                description=f"Has delegado {points} puntos a {to_user} para esta modificación",
+                color=Color.green()
+            )
+        else:
+            embed = Embed(
+                title="❌ Error",
+                description="No tienes suficientes puntos comprometidos o la modificación no existe",
+                color=Color.red()
+            )
+            
+        await ctx.send(embed=embed)
+
+    @commands.command(name="comprometer")
+    async def commit_to_debate(self, ctx, proposal_id: str, points: int):
+        """Compromete más puntos al debate
+        Uso: !comprometer ID_PROPUESTA PUNTOS"""
+        
+        success = await voting_system.debate_system.add_committed_points(
+            proposal_id,
+            str(ctx.author.id),
+            points
+        )
+        
+        if success:
+            embed = Embed(
+                title="✅ Puntos Comprometidos",
+                description=f"Has comprometido {points} puntos adicionales al debate",
+                color=Color.green()
+            )
+        else:
+            embed = Embed(
+                title="❌ Error",
+                description="No se pudieron comprometer los puntos",
+                color=Color.red()
+            )
+            
+        await ctx.send(embed=embed)
+
 def setup(bot):
     """Registra los Cogs con el bot"""
     bot.add_cog(DelegationCommands(bot))
     bot.add_cog(ProposalCommands(bot))
     bot.add_cog(InfoCommands(bot))
     bot.add_cog(AdminCommands(bot))
+    bot.add_cog(DebateCommands(bot))
