@@ -1,54 +1,53 @@
 # Arquitectura Técnica 🏛️
 
-## Recursividad Constitucional
+## Sistema Base
 
 ### Estructura Fundamental
 ```mermaid
 graph TD
-    A[Artículo 0] -->|Define Existencia| B[Sistema]
-    B -->|No Puede Modificar| A
-    B -->|Solo Puede Modificar| C[Artículo 1]
-    C -->|Contiene| D[Reglas de Modificación]
-    D -->|No Puede Modificar| A
-    D -->|Autoriza Modificaciones| C
+    A[Artículo 0: Base 0] -->|ln(0) = ∞| B[Inmutable]
+    B -->|Define Existencia| C[Sistema]
+    C -->|Solo Puede Modificar| D[Artículo 1: Base 1]
+    D -->|ln(votos_previos)| E[Modificaciones]
 ```
 
-### Núcleo Matemático
-El sistema se construye sobre dos principios matemáticos:
+### Principios Matemáticos
 
-1. **Artículo 0 (Inmutabilidad)**
+1. **Artículo 0: El Vacío**
    - Base = 0
-   - Votos requeridos = ln(0) = indefinido
-   - Matemáticamente imposible de modificar
+   - Requisito = ln(0) = ∞
+   - Matemáticamente inmutable
    - Define la existencia del sistema
 
-2. **Artículo 1 (Autoridad)**
+2. **Artículo 1: La Autoridad**
    - Base = 1
-   - Punto de entrada único para modificaciones
-   - Crece orgánicamente: ln(votos_previos)
-   - Hereda inmutabilidad del Artículo 0
+   - Requisito inicial = ln(1) = 0
+   - Crece con cada voto: ln(votos_previos)
+   - Hereda inmutabilidad del 0
 
-### Crecimiento Orgánico
+### Crecimiento Natural
 ```python
-def calculate_requirements(article_id: int) -> float:
+def calculate_requirements(article_id: int, previous_votes: int) -> float:
+    # Artículo 0: Inmutable por definición matemática
     if article_id == 0:
-        return float('inf')  # ln(0) -> imposible
-    return ln(previous_votes) if previous_votes > 0 else 1
+        return float('inf')  # ln(0)
+        
+    # Artículo 1: Base de autoridad
+    if article_id == 1:
+        return math.log(previous_votes) if previous_votes > 0 else 1
 ```
 
-### Flujo de Propuestas
+### Propuestas y Votaciones
 ```mermaid
 sequenceDiagram
     participant U as Usuario
     participant S as Sistema
     participant A1 as Artículo 1
-    participant A0 as Artículo 0
     
     U->>S: Proponer cambio
-    S->>A0: Verificar inmutabilidad
-    S->>A1: Aplicar modificación
-    A1->>S: Calcular requisitos ln(prev_votes)
-    S->>U: Resultado
+    S->>A1: Verificar base
+    A1->>S: Calcular ln(votos_previos)
+    S->>U: Requisitos
 ```
 
 # Arquitectura Técnica 🏛️

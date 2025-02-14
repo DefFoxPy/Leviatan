@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import os
 from dotenv import load_dotenv
 from commands import setup
@@ -48,10 +49,15 @@ class Leviathan(commands.Bot):
         ║          - Thomas Hobbes            ║
         ╚══════════════════════════════════════╝
         """)
+        await self.load_cogs()
+        
+    async def load_cogs(self):
+        await self.load_extension('cogs.basic_commands')
         
     async def on_ready(self):
         await self.tree.sync()
         print(f"The sovereign has awakened. Calculating ln(0) for eternity...")
+        print(f"Slash commands synchronized")
 
 bot = Leviathan()
 
