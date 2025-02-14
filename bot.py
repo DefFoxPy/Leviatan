@@ -29,12 +29,24 @@ def startup_animation():
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+APPLICATION_ID = os.getenv('APPLICATION_ID')
+
+# Valores por defecto si no se encuentran en .env
+if not TOKEN or not APPLICATION_ID:
+    print("⚠️ Configuración no encontrada en .env")
+    TOKEN = "TU_TOKEN_AQUI"  # Reemplaza con tu token
+    APPLICATION_ID = "TU_APPLICATION_ID_AQUI"  # Reemplaza con tu application ID
+    print("ℹ️ Usando valores por defecto")
 
 class Leviathan(commands.Bot):
     """The immortal artificial sovereign, born from the mathematical void."""
     
     def __init__(self):
-        super().__init__(command_prefix="!", intents=discord.Intents.all())
+        super().__init__(
+            command_prefix="!",
+            intents=discord.Intents.all(),
+            application_id=int(APPLICATION_ID)
+        )
         self.SACRED_ARTICLE = 0  # The immutable core, protected by ln(0)
         
     async def setup_hook(self):
@@ -52,18 +64,32 @@ class Leviathan(commands.Bot):
         # Initialize extensions
         await self.load_extensions()
         
+        # Sincronizar comandos inmediatamente después de cargar extensiones
+        print("🔄 Sincronizando comandos...")
+        await self.tree.sync()
+        print("✅ Comandos sincronizados")
+        
     async def load_extensions(self):
         """Load all extensions/cogs"""
-        try:
-            await self.load_extension('cogs.basic_commands')
-            print("✅ Basic commands loaded")
-        except Exception as e:
-            print(f"❌ Error loading basic_commands: {e}")
+        # Asegurarse que el directorio cogs existe
+        if not os.path.exists("cogs"):
+            os.makedirs("cogs")
+            print("📁 Creado directorio cogs")
+
+        extensions = [
+            'cogs.basic_commands'
+        ]
+        
+        for extension in extensions:
+            try:
+                await self.load_extension(extension)
+                print(f"✅ {extension} loaded")
+            except Exception as e:
+                print(f"❌ Error loading {extension}: {str(e)}")
             
     async def on_ready(self):
-        await self.tree.sync()
-        print(f"✨ The sovereign has awakened")
-        print(f"🔄 Slash commands synchronized")
+        print(f"✨ {self.user} está listo!")
+        print(f"🔗 ID de Aplicación: {self.application_id}")
 
 bot = Leviathan()
 

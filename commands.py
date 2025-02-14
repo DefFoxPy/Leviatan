@@ -563,11 +563,19 @@ async def help_command(interaction: discord.Interaction):
     
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-def setup(bot):
+async def setup(bot):
     """Registra los Cogs con el bot"""
-    bot.add_cog(DelegationCommands(bot))
-    bot.add_cog(ProposalCommands(bot))
-    bot.add_cog(InfoCommands(bot))
-    bot.add_cog(AdminCommands(bot))
-    bot.add_cog(DebateCommands(bot))
+    cogs = [
+        DelegationCommands(bot),
+        ProposalCommands(bot),
+        InfoCommands(bot),
+        AdminCommands(bot),
+        DebateCommands(bot)
+    ]
+    
+    for cog in cogs:
+        await bot.add_cog(cog)
+        print(f"✅ Loaded {cog.__class__.__name__}")
+    
     bot.tree.add_command(help_command)
+    print("✅ Help command registered")
