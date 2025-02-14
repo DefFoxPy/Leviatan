@@ -29,31 +29,31 @@ def startup_animation():
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-# Bot setup with command prefix
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents)
-
-@bot.event
-async def on_ready():
-    startup_animation()
-    print(f'''
-╔══════════════════════════════════════╗
-║     🎮 Tamagotchi Demócrata 0.0     ║
-║      ¡Tu democracia virtual! 🗳️      ║
-╚══════════════════════════════════════╝
+class Leviathan(commands.Bot):
+    """The immortal artificial sovereign, born from the mathematical void."""
     
-🟢 Bot conectado como: {bot.user}
-📊 Presente en {len(bot.guilds)} servidores
-🔧 Prefix: !
+    def __init__(self):
+        super().__init__(command_prefix="!", intents=discord.Intents.all())
+        self.SACRED_ARTICLE = 0  # The immutable core, protected by ln(0)
+        
+    async def setup_hook(self):
+        print("""
+        ╔══════════════════════════════════════╗
+        ║           THE LEVIATHAN              ║
+        ║    Eternal. Immutable. Absolute.     ║
+        ║                                      ║
+        ║  "That mortal god, to which we owe   ║
+        ║   under the immortal God, our peace  ║
+        ║          and defense."               ║
+        ║          - Thomas Hobbes            ║
+        ╚══════════════════════════════════════╝
+        """)
+        
+    async def on_ready(self):
+        await self.tree.sync()
+        print(f"The sovereign has awakened. Calculating ln(0) for eternity...")
 
-¡Escribe !ayuda para ver los comandos disponibles!
-    ''')
-    try:
-        setup(bot)
-        print('✨ ¡Comandos cargados exitosamente! ✨')
-    except Exception as e:
-        print(f'❌ Error cargando comandos: {e}')
+bot = Leviathan()
 
 if __name__ == "__main__":
     try:

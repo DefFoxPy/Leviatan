@@ -105,6 +105,46 @@ class ProposalCommands(commands.Cog):
         except TimeoutError:
             await ctx.send("⌛ Tiempo agotado. Intenta crear la propuesta nuevamente.")
 
+    @commands.command()
+    async def requisitos(self, ctx, article_id: int):
+        """Muestra requisitos de votación para un artículo"""
+        reqs = self.voting.calculate_requirements(article_id)
+        if not reqs:
+            await ctx.send("❌ Artículo no encontrado")
+            return
+
+        metadata = self.voting.get_article_metadata(article_id)
+        
+        embed = discord.Embed(title=f"Requisitos para Artículo {article_id}")
+        
+        if article_id == 0:
+            embed.description = "⚠️ Este artículo es matemáticamente inmutable (ln(0) = -∞)"
+            embed.color = discord.Color.red()
+        else:
+            embed.add_field(
+                name="Votos Necesarios",
+                value=f"{reqs['required_votes']:.2f}",
+                inline=True
+            )
+            embed.add_field(
+                name="Participación Mínima",
+                value=f"{reqs['min_participation']:.2f}",
+                inline=True
+            )
+            embed.add_field(
+                name="Base",
+                value=str(reqs['base']),
+                inline=True
+            )
+            embed.add_field(
+                name="Última Modificación",
+                value=metadata['last_modification'],
+                inline=False
+            )
+            embed.color = discord.Color.blue()
+            
+        await ctx.send(embed=embed)
+
 class InfoCommands(commands.Cog):
     """Comandos de información y ayuda"""
     

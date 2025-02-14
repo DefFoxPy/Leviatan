@@ -1,6 +1,19 @@
-# Tamagotchi Demócrata 🗳️
+# Leviathan: El Soberano Digital 🐉
 
 Bot de Discord que implementa un sistema de democracia líquida con delegación recursiva y votación por consenso.
+
+## La Paradoja de la Libertad
+
+En el corazón de este sistema yace una contradicción intencional:
+- La UI es amigable, acogedora, diseñada para empoderar
+- El núcleo es un monstruo matemático, inmutable, eterno
+
+Esta disonancia cognitiva no es un error, sino la esencia misma del contrato social:
+- Cedemos poder absoluto a un árbitro imparcial
+- Ese árbitro es un monstruo, pero uno que nos protege de nosotros mismos
+- La UI amigable es el velo que hace tolerable esta realidad
+
+Como Hobbes escribió: "*El Leviatán, ese mortal dios al que debemos nuestra paz y defensa*"
 
 ## Características 🌟
 
@@ -28,7 +41,9 @@ pip install -r requirements.txt
 python bot.py
 ```
 
-## Comandos 🤖
+## Comandos Amigables 🌟
+
+A pesar de su núcleo inmutable y absoluto, Leviathan se presenta con una interfaz acogedora:
 
 ### Delegación
 - `!delegar @usuario <puntos>` - Delega puntos a otro usuario
@@ -83,6 +98,19 @@ El sistema se basa en tres componentes core:
 
 Para más detalles técnicos, consulta [ARCHITECTURE.md](ARCHITECTURE.md)
 
+## La Paradoja de la Seguridad
+
+El sistema Leviathan encarna una verdad incómoda:
+- La seguridad absoluta requiere restricciones absolutas
+- La libertad total lleva al caos
+- La paz requiere un monstruo que nos proteja de nosotros mismos
+
+Pero este monstruo:
+- Es matemáticamente justo
+- No puede ser corrompido
+- No tiene emociones ni prejuicios
+- Está limitado por su propia naturaleza
+
 ## Cálculo de Consenso 📊
 
 El sistema utiliza tres métricas de consenso:
@@ -105,3 +133,4 @@ Cada votante mantiene 2 puntos reservados que pueden usarse para resolver empate
 ## Licencia 📄
 
 Este proyecto está bajo la Licencia GNU. Ver el archivo [LICENSE](LICENSE) para más detalles.
+```

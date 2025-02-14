@@ -1,6 +1,23 @@
 import math
 from typing import Dict, List, Tuple
 
+class MathUtils:
+    def calculate_proposal_requirement(self, previous_votes: int, base: int = 1) -> float:
+        """
+        Calcula requisitos considerando base del artículo
+        - Art 0: ln(0) = indefinido (inmutable)
+        - Art 1: ln(prev_votes) con base 1
+        """
+        if previous_votes == 0:
+            return float('inf')
+        return math.log(previous_votes * base, math.e)
+
+    def calculate_legitimate_participation(self, previous_votes: int, base: int = 1) -> float:
+        """Calcula participación mínima basada en votos previos y base"""
+        if previous_votes == 0:
+            return float('inf')
+        return math.log(previous_votes * base, math.e)
+
 def calculate_required_voters(previous_voters: int) -> int:
     """
     Calcula votantes necesarios para una nueva propuesta

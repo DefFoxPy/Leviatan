@@ -2,39 +2,53 @@
 
 ## Recursividad Constitucional
 
-### Artículos Fundamentales
+### Estructura Fundamental
 ```mermaid
 graph TD
-    A[Artículo 0] -->|Define| B[Existencia del Sistema]
-    B -->|Autoriza| C[Artículo 1]
+    A[Artículo 0] -->|Define Existencia| B[Sistema]
+    B -->|No Puede Modificar| A
+    B -->|Solo Puede Modificar| C[Artículo 1]
     C -->|Contiene| D[Reglas de Modificación]
     D -->|No Puede Modificar| A
-    D -->|Puede Modificar| C
+    D -->|Autoriza Modificaciones| C
 ```
 
-### Paradoja del ln(0)
-El Artículo 0 es matemáticamente inmutable debido a que:
-1. Los votos requeridos se calculan usando ln(votos_anteriores)
-2. El Artículo 0 nunca ha sido votado (0 votos)
-3. ln(0) está indefinido matemáticamente
-4. Por tanto, es imposible calcular los votos necesarios
-5. ACTUA COMO EL LEVIATAN DE TODA LA CONSTITUCIÓN
+### Núcleo Matemático
+El sistema se construye sobre dos principios matemáticos:
 
-Este es un feature, no un bug:
-- Garantiza la inmutabilidad del artículo base
-- No requiere restricciones artificiales
-- Es matemáticamente elegante
-- Protege los fundamentos del sistema
+1. **Artículo 0 (Inmutabilidad)**
+   - Base = 0
+   - Votos requeridos = ln(0) = indefinido
+   - Matemáticamente imposible de modificar
+   - Define la existencia del sistema
 
-### Estructura Recursiva
+2. **Artículo 1 (Autoridad)**
+   - Base = 1
+   - Punto de entrada único para modificaciones
+   - Crece orgánicamente: ln(votos_previos)
+   - Hereda inmutabilidad del Artículo 0
+
+### Crecimiento Orgánico
 ```python
-def puede_modificar(articulo_id: int) -> bool:
-    if articulo_id == 0:
-        return False  # ln(0) indefinido
-    elif articulo_id == 1:
-        return self_modifiable()  # Se modifica según sus propias reglas
-    else:
-        return check_article_one_rules()  # Sigue reglas del Artículo 1
+def calculate_requirements(article_id: int) -> float:
+    if article_id == 0:
+        return float('inf')  # ln(0) -> imposible
+    return ln(previous_votes) if previous_votes > 0 else 1
+```
+
+### Flujo de Propuestas
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant S as Sistema
+    participant A1 as Artículo 1
+    participant A0 as Artículo 0
+    
+    U->>S: Proponer cambio
+    S->>A0: Verificar inmutabilidad
+    S->>A1: Aplicar modificación
+    A1->>S: Calcular requisitos ln(prev_votes)
+    S->>U: Resultado
 ```
 
 # Arquitectura Técnica 🏛️
@@ -222,9 +236,7 @@ def calculate_requirements(article_id: int, previous_votes: int) -> int:
     if article_id == 0:
         return float('inf')  # ln(0) -> imposible
     
-    base_requirement = ln(previous_votes) if previous_votes > 0 else 100
-    multiplier = get_article_weight(article_id)
-    return base_requirement * multiplier
+    return ln(previous_votes) if previous_votes > 0 else 100
 ```
 
 ## Calculadora de Requisitos 🧮
@@ -267,18 +279,8 @@ Para probar las fórmulas de cálculo de requisitos, puedes usar esta calculador
         requirement = 100;
       }
       
-      const multiplier = getArticleWeight(articleId);
-      const final = requirement * multiplier;
-      
       document.getElementById('result').innerHTML = 
-        `Resultado: ${final.toFixed(2)} votos requeridos`;
-    }
-    
-    function getArticleWeight(id) {
-      // Pesos por tipo de artículo
-      if (id === 1) return 2.0;  // Artículos fundamentales
-      if (id <= 5) return 1.5;   // Artículos importantes
-      return 1.0;                // Artículos regulares
+        `Resultado: ${requirement.toFixed(2)} votos requeridos`;
     }
   </script>
 </div>
@@ -289,17 +291,15 @@ Para probar las fórmulas de cálculo de requisitos, puedes usar esta calculador
 
 ### Ejemplos de Uso 📝
 
-1. **Artículo Regular**:
+1. **Artículo con 100 votos previos**:
    - Votos previos: 100
-   - ID Artículo: 10
-   - Resultado: 460.51 votos
-   - `ln(100) * 1.0 = 460.51`
+   - Resultado: 4.61 votos
+   - `ln(100) = 4.61`
 
-2. **Artículo Fundamental**:
-   - Votos previos: 100
-   - ID Artículo: 1
-   - Resultado: 921.02 votos
-   - `ln(100) * 2.0 = 921.02`
+2. **Artículo con 1000 votos previos**:
+   - Votos previos: 1000
+   - Resultado: 6.91 votos
+   - `ln(1000) = 6.91`
 
 3. **Artículo Imposible**:
    - Votos previos: 0
@@ -309,9 +309,9 @@ Para probar las fórmulas de cálculo de requisitos, puedes usar esta calculador
 
 ### Notas Importantes 📌
 
-- Los artículos fundamentales (ID 1) requieren el doble de votos
-- Los artículos importantes (ID 2-5) requieren 1.5x votos
-- Los artículos regulares (ID > 5) mantienen el requisito base
+- El requisito aumenta naturalmente con el número de votantes previos
+- El logaritmo natural hace que el aumento sea gradual y manejable
+- Los requisitos son iguales para todos los artículos excepto el 0
 - El Artículo 0 es matemáticamente inmutable
 
 ## Sistema de Resolución de Conflictos

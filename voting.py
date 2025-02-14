@@ -40,7 +40,7 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set
-from utility import calculate_required_voters, calculate_minimum_participation, validate_proposal_requirements
+from utility import calculate_required_voters, calculate_minimum_participation, validate_proposal_requirements, MathUtils
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import logging
@@ -294,6 +294,7 @@ class VotingSystem:
         self.proposal_locks: Dict[str, asyncio.Lock] = {}
         self.data_file = "Data/proposals.json"
         self.constitution = Constitution()
+        self.math = MathUtils()
         
     async def create_proposal(self, owner_id: str, title: str, existing_articles: Dict[str, Dict], new_articles: Dict[str, Dict] = None) -> Tuple[str, bool]:
         """
@@ -548,3 +549,36 @@ class VotingSystem:
             }
             
         return results
+
+    def get_article_metadata(self, article_id: int) -> Dict:
+        """Obtiene metadatos del artículo incluyendo base y votos previos"""
+        article = self.constitution.get_article(article_id)
+        if not article:
+            return None
+        
+        return {
+            'base': article.get('base', 1),  # Art 0: base 0, Art 1: base 1, otros: base 1
+            'previous_votes': self.vote_history.get(article_id, 0),
+            'last_modification': article.get('votacion_anterior', {}).get('fecha', 'N/A')
+        }
+
+    def calculate_requirements(self, article_id: int) -> Dict[str, float]:
+        """Calcula requisitos basados en metadatos del artículo"""
+        metadata = self.get_article_metadata(article_id)
+        if not metadata:
+            return None
+
+        # Si es Artículo 0, es imposible
+        if article_id == 0:
+            return {
+                'required_votes': float('inf'),
+                'min_participation': float('inf'),
+                'base': 0
+            }
+
+        # Para otros artículos, usar ln(previous_votes)
+        return {
+            'required_votes': self.math.calculate_proposal_requirement(metadata['previous_votes']),
+            'min_participation': self.math.calculate_legitimate_participation(metadata['previous_votes']),
+            'base': metadata['base']
+        }
