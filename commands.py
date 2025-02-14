@@ -1,3 +1,5 @@
+import discord
+from discord import app_commands
 from discord.ext import commands
 from discord import Embed, Color
 from typing import Dict, Optional
@@ -7,10 +9,27 @@ from visualization import VoterVisualization, VoteType
 from datetime import datetime
 import pandas as pd
 import json
-import discord
 
 delegation_system = DelegationSystem()
 voting_system = VotingSystem()
+
+# Agregar descripción de comandos slash
+help_descriptions = {
+    "delegar": "Delega puntos de votación a otro usuario",
+    "revocar": "Revoca la delegación a un usuario y recupera tus puntos",
+    "proponer": "Inicia el proceso de crear una nueva propuesta",
+    "articulo": "Añade un artículo a una propuesta existente",
+    "requisitos": "Muestra los requisitos de votación para un artículo",
+    "perfil": "Muestra tu perfil de votante y estadísticas",
+    "arbol": "Visualiza tu árbol de delegación o tubérculo",
+    "analisis": "Analiza el estado del sistema (Admin)",
+    "exportar": "Exporta datos del sistema para análisis (Admin)",
+    "simulacion": "Ejecuta simulaciones del sistema (Admin)",
+    "modificar": "Propone una modificación a un artículo",
+    "votar_mod": "Vota en una modificación propuesta",
+    "delegar_debate": "Delega puntos durante el debate",
+    "comprometer": "Compromete más puntos al debate"
+}
 
 class DelegationCommands(commands.Cog):
     """Comandos para el sistema de delegación de votos"""
@@ -18,12 +37,20 @@ class DelegationCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-    @commands.command(name="delegar")
-    async def delegate(self, ctx, to_user: str, points: int, subdelegable: bool = False):
+    @app_commands.command(
+        name="delegar",
+        description=help_descriptions["delegar"]
+    )
+    @app_commands.describe(
+        to_user="Usuario al que quieres delegar",
+        points="Cantidad de puntos a delegar",
+        subdelegable="Permitir que el usuario pueda subdelegar estos puntos"
+    )
+    async def delegate_slash(self, interaction: discord.Interaction, to_user: str, points: int, subdelegable: bool = False):
         """Delega puntos a otro usuario
         Uso: !delegar @usuario 500 [True/False]"""
         success = delegation_system.delegate_points(
-            str(ctx.author.id), 
+            str(interaction.user.id), 
             to_user.strip('<@!>'), 
             points, 
             subdelegable
@@ -42,7 +69,7 @@ class DelegationCommands(commands.Cog):
                 color=Color.red()
             )
             
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     @commands.command(name='revocar')
     async def revoke(ctx, target: discord.Member):
@@ -77,8 +104,11 @@ class ProposalCommands(commands.Cog):
         self.bot = bot
         self.drafts: Dict[str, Dict] = {}
         
-    @commands.command(name="proponer")
-    async def start_proposal(self, ctx):
+    @app_commands.command(
+        name="proponer",
+        description=help_descriptions["proponer"]
+    )
+    async def start_proposal_slash(self, interaction: discord.Interaction):
         """Inicia el proceso de crear una propuesta
         Uso: !proponer"""
         embed = Embed(
@@ -86,31 +116,37 @@ class ProposalCommands(commands.Cog):
             description="Iniciemos el proceso de creación.\nResponde con el título de tu propuesta.",
             color=Color.blue()
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
         
         def check(m):
-            return m.author == ctx.author and m.channel == ctx.channel
+            return m.author == interaction.user and m.channel == interaction.channel
             
         try:
             title_msg = await self.bot.wait_for('message', timeout=300.0, check=check)
-            proposal_id = voting_system.create_proposal(str(ctx.author.id), title_msg.content, 100)
+            proposal_id = voting_system.create_proposal(str(interaction.user.id), title_msg.content, 100)
             
             embed = Embed(
                 title="✅ Propuesta Creada",
                 description=f"ID: {proposal_id}\nTítulo: {title_msg.content}\n\nUsa !articulo {proposal_id} para añadir artículos.",
                 color=Color.green()
             )
-            await ctx.send(embed=embed)
+            await interaction.followup.send(embed=embed)
             
         except TimeoutError:
-            await ctx.send("⌛ Tiempo agotado. Intenta crear la propuesta nuevamente.")
+            await interaction.followup.send("⌛ Tiempo agotado. Intenta crear la propuesta nuevamente.")
 
-    @commands.command()
-    async def requisitos(self, ctx, article_id: int):
+    @app_commands.command(
+        name="requisitos",
+        description=help_descriptions["requisitos"]
+    )
+    @app_commands.describe(
+        article_id="ID del artículo"
+    )
+    async def requisitos_slash(self, interaction: discord.Interaction, article_id: int):
         """Muestra requisitos de votación para un artículo"""
         reqs = self.voting.calculate_requirements(article_id)
         if not reqs:
-            await ctx.send("❌ Artículo no encontrado")
+            await interaction.response.send_message("❌ Artículo no encontrado")
             return
 
         metadata = self.voting.get_article_metadata(article_id)
@@ -143,7 +179,7 @@ class ProposalCommands(commands.Cog):
             )
             embed.color = discord.Color.blue()
             
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 class InfoCommands(commands.Cog):
     """Comandos de información y ayuda"""
@@ -498,6 +534,35 @@ class DebateCommands(commands.Cog):
             
         await ctx.send(embed=embed)
 
+@app_commands.command(name="help")
+async def help_command(interaction: discord.Interaction):
+    """Muestra ayuda sobre los comandos disponibles"""
+    embed = discord.Embed(
+        title="📚 Ayuda - Comandos Disponibles",
+        color=discord.Color.blue()
+    )
+    
+    categories = {
+        "Delegación": ["delegar", "revocar"],
+        "Propuestas": ["proponer", "articulo", "requisitos"],
+        "Información": ["perfil", "arbol"],
+        "Admin": ["analisis", "exportar", "simulacion"],
+        "Debate": ["modificar", "votar_mod", "delegar_debate", "comprometer"]
+    }
+    
+    for category, cmds in categories.items():
+        commands_text = "\n".join(
+            f"/{cmd} - {help_descriptions[cmd]}"
+            for cmd in cmds
+        )
+        embed.add_field(
+            name=f"🔹 {category}",
+            value=commands_text,
+            inline=False
+        )
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
 def setup(bot):
     """Registra los Cogs con el bot"""
     bot.add_cog(DelegationCommands(bot))
@@ -505,3 +570,4 @@ def setup(bot):
     bot.add_cog(InfoCommands(bot))
     bot.add_cog(AdminCommands(bot))
     bot.add_cog(DebateCommands(bot))
+    bot.tree.add_command(help_command)
