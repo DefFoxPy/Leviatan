@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import os
 from dotenv import load_dotenv
-from commands import setup
+from cogs.commands import setup
 import time
 import sys
 
@@ -43,7 +43,7 @@ class Leviathan(commands.Bot):
     
     def __init__(self):
         super().__init__(
-            command_prefix="!",
+            command_prefix="!l",
             intents=discord.Intents.all(),
             application_id=int(APPLICATION_ID)
         )
@@ -77,7 +77,7 @@ class Leviathan(commands.Bot):
             print("📁 Creado directorio cogs")
 
         extensions = [
-            'cogs.basic_commands'
+            'cogs.commands'
         ]
         
         for extension in extensions:
