@@ -49,15 +49,21 @@ class Leviathan(commands.Bot):
         ║          - Thomas Hobbes            ║
         ╚══════════════════════════════════════╝
         """)
-        await self.load_cogs()
+        # Initialize extensions
+        await self.load_extensions()
         
-    async def load_cogs(self):
-        await self.load_extension('cogs.basic_commands')
-        
+    async def load_extensions(self):
+        """Load all extensions/cogs"""
+        try:
+            await self.load_extension('cogs.basic_commands')
+            print("✅ Basic commands loaded")
+        except Exception as e:
+            print(f"❌ Error loading basic_commands: {e}")
+            
     async def on_ready(self):
         await self.tree.sync()
-        print(f"The sovereign has awakened. Calculating ln(0) for eternity...")
-        print(f"Slash commands synchronized")
+        print(f"✨ The sovereign has awakened")
+        print(f"🔄 Slash commands synchronized")
 
 bot = Leviathan()
 
