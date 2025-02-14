@@ -1,0 +1,42 @@
+{
+    "voters": {
+        "voter_metadata": {
+            "last_updated": "2024-01-01T00:00:00Z",
+            "total_voters": 0,
+            "total_points_delegated": 0,
+            "total_points_in_circulation": 0
+        },
+        "nodes": {}
+    },
+    "delegation_history": {
+        "cycles": {
+            "total_cycles_detected": 0,
+            "cycles_log": [],
+            "last_cycle_date": null
+        },
+        "transactions": {
+            "total_delegations": 0,
+            "total_revocations": 0,
+            "total_subdelegations": 0
+        }
+    },
+    "system_state": {
+        "last_updated": "2024-01-01T00:00:00Z",
+        "version": "1.0.0",
+        "cycle_detection_enabled": true,
+        "reserved_points_per_voter": 1,
+        "base_points_per_voter": 1000
+    },
+    "delegation_trees": {
+        "tree_metadata": {
+            "last_updated": "2024-01-01T00:00:00Z",
+            "total_trees": 0
+        },
+        "trees": {}
+    },
+    "activity_tracking": {
+        "current_activity_file": "activity_2024_01.json",
+        "activity_directory": "/Activity",
+        "archived_activities": []
+    }
+}

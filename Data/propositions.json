@@ -1,0 +1,40 @@
+{
+    "propuesta": {
+      "id": "",
+      "titulo": "",
+      "descripcion": "",
+      "proponente": "",
+      "fecha_propuesta": "",
+      "plazo_implementacion": "",
+      "estado": "presentacion", 
+      "articulos_modificados": [
+        {
+          "id_articulo": "",
+          "descripcion": "",
+          "votacion_anterior": "",
+          "fecha_aprobacion": "",
+          "proponente_original": "",
+          "num_votos_necesarios": 0
+        }
+      ],
+      "num_votos_requeridos": 0,
+      "plan_implementacion": "",
+      "simpatizantes_minimos": 0,
+      "votos_comprometidos": [],
+      "delegaciones": {
+        "permitidas": true,
+        "subdelegaciones": true,
+        "trazabilidad": []
+      },
+      "visualizacion": {
+        "arbol_votos": [],
+        "tuberculo_votos": []
+      },
+      "indicadores_consenso": {
+        "percepcion_redes": 0,
+        "cambio_opinion": 0,
+        "nivel_incertidumbre": 0
+      }
+    }
+  }
+  

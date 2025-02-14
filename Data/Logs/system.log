@@ -1,0 +1,11 @@
+2024-01-01 00:00:00,000 [INFO] voting - Event: VotingSystem initialized
+Details: No details provided
+
+2024-01-01 00:01:23,456 [INFO] voting - Event: Proposal created
+Details: {'proposal_id': 'prop_1', 'owner_id': 'user123', 'articles': ['art1', 'art2']}
+
+2024-01-01 00:02:34,567 [VOTE] Proposal: prop_1 | Voter: user456 | Action: commit_points | Details: {'points': 500, 'support': true, 'current_total': 1500}
+
+2024-01-01 00:03:45,678 [ERROR] voting - Error: Invalid state transition
+Context: Attempting to change from VOTING to DRAFT
+Type: ValueError

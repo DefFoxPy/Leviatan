@@ -1,0 +1,32 @@
+{
+    "articulos": [
+      {
+        "id": 0,
+        "titulo": "Artículo 0",
+        "contenido": "El sistema de gobernanza existe únicamente dentro de este servidor y se autorregula bajo sus propias reglas.\nEl Artículo 1 es la única fuente de autoridad válida y no puede ser ignorado ni reemplazado, ni modificado.",
+        "fecha_propuesta": "N/A",
+        "proponente": "Sistema",
+        "fecha_aprobacion": "N/A",
+        "votacion_anterior": "N/A",
+        "votos_necesarios_modificacion": "N/A",
+        "precedentes": []
+      },
+      {
+        "id": 1,
+        "titulo": "Artículo 1",
+        "contenido": "El Artículo 1 contiene todas las reglas, decisiones y mecanismos de modificación del sistema.\nCualquier cambio, propuesta o reforma debe realizarse exclusivamente dentro del Artículo 1.\nSolo las decisiones tomadas conforme al Artículo 0 tienen validez.\nEste artículo puede modificarse siguiendo sus propios procedimientos.",
+        "fecha_propuesta": "YYYY-MM-DD",
+        "proponente": "Sistema",
+        "fecha_aprobacion": "YYYY-MM-DD",
+        "votacion_anterior": {
+          "fecha": "YYYY-MM-DD",
+          "votos_a_favor": "X",
+          "votos_en_contra": "Y",
+          "total_votos": "Z"
+        },
+        "votos_necesarios_modificacion": "Calculado según modelo logarítmico",
+        "precedentes": [1]
+      }
+    ]
+  }
+  
