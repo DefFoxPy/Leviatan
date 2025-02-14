@@ -2,13 +2,18 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
+APPLICATION_ID = os.getenv('APPLICATION_ID')
 
 class Leviatan(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix="!",
-            intents=discord.Intents.all(),
-            application_id="1340016755313086474"
+            command_prefix="!l",
+            intents=discord.Intents.all()
         )
     
     async def setup_hook(self):
@@ -33,7 +38,7 @@ class Leviatan(commands.Bot):
 async def main():
     bot = Leviatan()
     try:
-        await bot.start('Tu-Token-Aquí')
+        await bot.start(TOKEN)
     except discord.errors.LoginFailure:
         print("Error: Token inválido. Por favor verifica tu token.")
     except Exception as e:
